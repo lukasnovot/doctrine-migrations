@@ -34,7 +34,7 @@ final class MigrationsExtension extends CompilerExtension
 		return Expect::structure([
 			'table' => Expect::string('doctrine_migrations'),
 			'column' => Expect::string('version'),
-			'directory' => Expect::string()->required(),
+			'directory' => Expect::arrayOf('string|array')->required(),
 			'namespace' => Expect::string('Migrations'),
 			'versionsOrganization' => Expect::anyOf(
 				null,
@@ -63,8 +63,15 @@ final class MigrationsExtension extends CompilerExtension
 			->setFactory(Configuration::class)
 			->addSetup('setCustomTemplate', [$config->customTemplate])
 			->addSetup('setMetadataStorageConfiguration', [$storage])
-			->addSetup('addMigrationsDirectory', [$config->namespace, $config->directory])
-            ->addSetup('setAllOrNothing', [$config->allOrNothing]);;
+            ->addSetup('setAllOrNothing', [$config->allOrNothing]);
+
+		if (is_string($config->directory)) {
+			$configuration->addSetup('addMigrationsDirectory', [$config->namespace, $config->directory]);
+		} else {
+			foreach ($config->directory as $namespace => $directory) {
+				$configuration->addSetup('addMigrationsDirectory', [$namespace, $directory]);
+			}
+		}
 
 		if ($config->versionsOrganization === Configuration::VERSIONS_ORGANIZATION_BY_YEAR) {
 			$configuration->addSetup('setMigrationsAreOrganizedByYear');
